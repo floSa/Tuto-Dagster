@@ -1,0 +1,36 @@
+# Environnements virtuels
+.venv/
+venv/
+ENV/
+env/
+
+# Python / Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+wheels/
+
+# Dagster
+.dagster_home/
+dagster.yaml
+storage/
+
+# Données générées
+data/*.parquet
+data/*/*.parquet
+
+# Tests & Linters
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
