@@ -61,7 +61,6 @@ Dagster-Test-Bench/
 │   ├── manuel-utilisateur.md
 │   └── images/
 ├── data/                                   # Fichiers Parquet produits (non versionnés)
-├── main.py                                 # Rappel des commandes de démarrage
 ├── pyproject.toml
 ├── uv.lock
 └── TUTORIAL.md

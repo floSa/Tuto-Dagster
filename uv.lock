@@ -403,6 +403,37 @@ wheels = [
 ]
 
 [[package]]
+name = "dagster-test-bench"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "dagster" },
+    { name = "dagster-webserver" },
+    { name = "faker" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pyarrow" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "black" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "black", marker = "extra == 'dev'", specifier = ">=24.0.0" },
+    { name = "dagster", specifier = ">=1.13.28" },
+    { name = "dagster-webserver", specifier = ">=1.13.28" },
+    { name = "faker", specifier = ">=24.0.0" },
+    { name = "pandas", specifier = ">=2.0.0" },
+    { name = "pyarrow", specifier = ">=12.0.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "dagster-webserver"
 version = "1.13.28"
 source = { registry = "https://pypi.org/simple" }
@@ -2385,37 +2416,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/0d/ea/b2a5bd54b28a324da
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/03/921a3d3c75785aca9ebfbfcabfbc3a1be12e2ab5265deb026d55a5a3f83e/tqdm-4.70.1-py3-none-any.whl", hash = "sha256:c293e525e6fef9c20e8728fd4612df02a0aa31bb5fe91ecd93e123b1b7bffa73", size = 80199, upload-time = "2026-09-11T07:25:14.599Z" },
 ]
-
-[[package]]
-name = "tuto-dagster"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "dagster" },
-    { name = "dagster-webserver" },
-    { name = "faker" },
-    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "pandas", version = "3.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pyarrow" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "black" },
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=24.0.0" },
-    { name = "dagster", specifier = ">=1.13.28" },
-    { name = "dagster-webserver", specifier = ">=1.13.28" },
-    { name = "faker", specifier = ">=24.0.0" },
-    { name = "pandas", specifier = ">=2.0.0" },
-    { name = "pyarrow", specifier = ">=12.0.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "typing-extensions"
