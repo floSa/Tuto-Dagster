@@ -1,5 +1,11 @@
 import pandas as pd
-from dagster import AssetExecutionContext, MetadataValue, TableRecord, asset
+from dagster import (
+    AssetExecutionContext,
+    AutomationCondition,
+    MetadataValue,
+    TableRecord,
+    asset,
+)
 
 from .ingestion import DAILY_PARTITIONS
 
@@ -11,6 +17,7 @@ from .ingestion import DAILY_PARTITIONS
     kinds={"pandas", "parquet"},
     owners=["team:data"],
     tags={"domain": "music"},
+    automation_condition=AutomationCondition.eager(),
 )
 def daily_artist_stats(
     context: AssetExecutionContext, clean_tracks: pd.DataFrame

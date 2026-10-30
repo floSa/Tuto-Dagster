@@ -1,8 +1,16 @@
 from typing import List
 
 import pandas as pd
-from dagster import AssetExecutionContext, Config, DailyPartitionsDefinition, asset
+from dagster import (
+    AssetExecutionContext,
+    AutomationCondition,
+    Config,
+    DailyPartitionsDefinition,
+    asset,
+)
 from faker import Faker
+
+from ..settings import RAW_TRACKS_CRON
 
 DAILY_PARTITIONS = DailyPartitionsDefinition(start_date="2024-01-01")
 
@@ -59,6 +67,7 @@ def _mock_tracks_api(partition_date: str, rows: int = 100) -> pd.DataFrame:
     kinds={"python", "parquet"},
     owners=["team:data"],
     tags={"domain": "music"},
+    automation_condition=AutomationCondition.on_cron(RAW_TRACKS_CRON),
 )
 def raw_tracks_data(
     context: AssetExecutionContext, config: RawTracksConfig

@@ -1,5 +1,5 @@
 import pandas as pd
-from dagster import AssetCheckResult, asset, asset_check
+from dagster import AssetCheckResult, AutomationCondition, asset, asset_check
 
 from .ingestion import DAILY_PARTITIONS
 
@@ -11,6 +11,7 @@ from .ingestion import DAILY_PARTITIONS
     kinds={"pandas", "parquet"},
     owners=["team:data"],
     tags={"domain": "music"},
+    automation_condition=AutomationCondition.eager(),
 )
 def clean_tracks(raw_tracks_data: pd.DataFrame) -> pd.DataFrame:
     """
