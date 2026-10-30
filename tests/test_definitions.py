@@ -1,7 +1,10 @@
-from dagster import AssetKey, materialize
+from datetime import datetime, timezone
+
+from dagster import AssetKey, build_schedule_context, materialize
 
 from streamify_ops import assets, asset_checks, defs
 from streamify_ops.resources import LocalFilesystemIOManager
+from streamify_ops.schedules import daily_streamify_schedule
 
 
 def _materialize(tmp_path, null_track_ids: int):
@@ -38,3 +41,11 @@ def test_failed_check_blocks_downstream_asset(tmp_path):
     materialized = {e.asset_key for e in result.get_asset_materialization_events()}
     assert AssetKey("clean_tracks") in materialized
     assert AssetKey("daily_artist_stats") not in materialized
+
+
+def test_schedule_targets_previous_day():
+    context = build_schedule_context(
+        scheduled_execution_time=datetime(2024, 3, 2, tzinfo=timezone.utc)
+    )
+
+    assert daily_streamify_schedule(context).partition_key == "2024-03-01"
