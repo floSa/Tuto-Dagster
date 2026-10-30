@@ -13,4 +13,5 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --extra dev --frozen
       - run: uv run --frozen black --check .
+      - run: uv run --frozen dg check defs
       - run: uv run --frozen pytest
