@@ -29,7 +29,8 @@ def test_check_passes_on_clean_data(tmp_path):
     result = _materialize(tmp_path, null_track_ids=0)
 
     assert result.success
-    assert [e.passed for e in result.get_asset_check_evaluations()] == [True]
+    evaluations = result.get_asset_check_evaluations()
+    assert [(e.partition, e.passed) for e in evaluations] == [("2024-01-15", True)]
     assert (tmp_path / "daily_artist_stats" / "2024-01-15.parquet").exists()
 
 
@@ -37,7 +38,8 @@ def test_failed_check_blocks_downstream_asset(tmp_path):
     result = _materialize(tmp_path, null_track_ids=3)
 
     assert not result.success
-    assert [e.passed for e in result.get_asset_check_evaluations()] == [False]
+    evaluations = result.get_asset_check_evaluations()
+    assert [(e.partition, e.passed) for e in evaluations] == [("2024-01-15", False)]
     materialized = {e.asset_key for e in result.get_asset_materialization_events()}
     assert AssetKey("clean_tracks") in materialized
     assert AssetKey("daily_artist_stats") not in materialized

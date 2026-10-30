@@ -20,10 +20,15 @@ def clean_tracks(
     return df
 
 
-@asset_check(asset=clean_tracks, name="clean_tracks_id_not_null", blocking=True)
+@asset_check(
+    asset=clean_tracks,
+    name="clean_tracks_id_not_null",
+    blocking=True,
+    partitions_def=DAILY_PARTITIONS,
+)
 def clean_tracks_id_not_null(clean_tracks: pd.DataFrame) -> AssetCheckResult:
     """
-    Check de qualite bloquant: aucun track_id null.
+    Check de qualite bloquant, evalue partition par partition: aucun track_id null.
     """
     null_count = int(clean_tracks["track_id"].isna().sum())
     return AssetCheckResult(passed=null_count == 0, metadata={"null_count": null_count})
