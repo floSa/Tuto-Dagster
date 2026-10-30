@@ -1,5 +1,5 @@
 import pandas as pd
-from dagster import AssetExecutionContext, MetadataValue, asset
+from dagster import AssetExecutionContext, MetadataValue, TableRecord, asset
 
 from .ingestion import DAILY_PARTITIONS
 
@@ -22,7 +22,7 @@ def daily_artist_stats(
     context.add_output_metadata(
         {
             "rows": len(stats),
-            "preview": MetadataValue.json(preview),
+            "preview": MetadataValue.table([TableRecord(row) for row in preview]),
         }
     )
     return stats
