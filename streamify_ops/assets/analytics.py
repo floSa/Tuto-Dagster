@@ -2,11 +2,13 @@ import pandas as pd
 from dagster import (
     AssetExecutionContext,
     AutomationCondition,
+    FreshnessPolicy,
     MetadataValue,
     TableRecord,
     asset,
 )
 
+from ..settings import FRESHNESS_FAIL, FRESHNESS_WARN
 from .ingestion import DAILY_PARTITIONS
 
 
@@ -18,6 +20,9 @@ from .ingestion import DAILY_PARTITIONS
     owners=["team:data"],
     tags={"domain": "music"},
     automation_condition=AutomationCondition.eager(),
+    freshness_policy=FreshnessPolicy.time_window(
+        fail_window=FRESHNESS_FAIL, warn_window=FRESHNESS_WARN
+    ),
 )
 def daily_artist_stats(
     context: AssetExecutionContext, clean_tracks: pd.DataFrame

@@ -12,6 +12,7 @@ from dagster import (
 from streamify_ops import assets, asset_checks, defs
 from streamify_ops.resources import LocalFilesystemIOManager
 from streamify_ops.schedules import daily_streamify_schedule
+from streamify_ops.settings import FRESHNESS_FAIL, FRESHNESS_WARN
 
 
 def _materialize(tmp_path, null_track_ids: int):
@@ -43,6 +44,13 @@ def test_assets_are_grouped_by_layer():
         "clean_tracks": "silver",
         "daily_artist_stats": "gold",
     }
+
+
+def test_gold_declares_a_freshness_policy():
+    node = defs.resolve_asset_graph().get(AssetKey("daily_artist_stats"))
+
+    assert node.freshness_policy.fail_window.to_timedelta() == FRESHNESS_FAIL
+    assert node.freshness_policy.warn_window.to_timedelta() == FRESHNESS_WARN
 
 
 def test_check_passes_on_clean_data(tmp_path):
