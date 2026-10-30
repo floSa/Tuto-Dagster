@@ -1,8 +1,8 @@
 from dagster import materialize_to_memory
 
-from streamify_ops.assets.analytics import daily_artist_stats
-from streamify_ops.assets.ingestion import raw_tracks_data
-from streamify_ops.assets.transformation import clean_tracks
+from streamify_ops.defs.assets.analytics import daily_artist_stats
+from streamify_ops.defs.assets.ingestion import raw_tracks_data
+from streamify_ops.defs.assets.transformation import clean_tracks
 
 
 def test_clean_tracks_asset():

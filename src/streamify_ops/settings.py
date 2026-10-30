@@ -5,7 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 
 BASE_DATA_PATH = Path(
-    os.environ.get("STREAMIFY_DATA_DIR", Path(__file__).resolve().parents[1] / "data")
+    os.environ.get("STREAMIFY_DATA_DIR", Path(__file__).resolve().parents[2] / "data")
 )
 
 # Accélère le temps pour observer le cron et la fraîcheur en quelques minutes.

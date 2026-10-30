@@ -10,11 +10,14 @@ from dagster import (
     materialize,
 )
 
-from streamify_ops import assets, asset_checks, defs
-from streamify_ops.assets.ingestion import raw_tracks_data
+from pipeline import asset_checks, assets
+from streamify_ops.definitions import defs as lazy_defs
+from streamify_ops.defs.assets.ingestion import raw_tracks_data
 from streamify_ops.resources import LocalFilesystemIOManager
-from streamify_ops.schedules import daily_streamify_schedule
+from streamify_ops.defs.schedules import daily_streamify_schedule
 from streamify_ops.settings import FRESHNESS_FAIL, FRESHNESS_WARN
+
+defs = lazy_defs()
 
 
 def _materialize(tmp_path, null_track_ids: int):

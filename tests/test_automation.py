@@ -11,7 +11,7 @@ from dagster import (
     materialize,
 )
 
-from streamify_ops import assets, asset_checks
+from pipeline import asset_checks, assets
 from streamify_ops.resources import LocalFilesystemIOManager
 
 

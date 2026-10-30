@@ -8,7 +8,7 @@ from dagster import (
     asset,
 )
 
-from ..settings import FRESHNESS_FAIL, FRESHNESS_WARN
+from ...settings import FRESHNESS_FAIL, FRESHNESS_WARN
 from .ingestion import DAILY_PARTITIONS
 
 

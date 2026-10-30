@@ -6,7 +6,8 @@ from dagster import (
     materialize,
 )
 
-from streamify_ops import asset_checks, assets, sensors
+from pipeline import asset_checks, assets
+from streamify_ops.defs import sensors
 from streamify_ops.resources import LocalFilesystemIOManager
 
 

@@ -20,11 +20,21 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "black>=24.0.0",
+    "dagster-dg-cli>=1.13.28",
 ]
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["streamify_ops*"]
+
+[tool.dg]
+directory_type = "project"
+
+[tool.dg.project]
+root_module = "streamify_ops"
+# Meme nom que `dagster ... -m streamify_ops.definitions` : l'etat des schedules
+# et des sensors demarres en ligne de commande reste celui de l'interface.
+code_location_name = "streamify_ops.definitions"
 
 [tool.black]
 line-length = 88

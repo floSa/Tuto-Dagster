@@ -9,7 +9,7 @@ from dagster import (
 )
 
 from .jobs import daily_streamify_job
-from .settings import BASE_DATA_PATH
+from ..settings import BASE_DATA_PATH
 
 
 @sensor(job=daily_streamify_job, minimum_interval_seconds=10)
