@@ -2,24 +2,23 @@ import os
 from typing import Optional
 
 import pandas as pd
-from dagster import IOManager, InputContext, OutputContext
+from dagster import ConfigurableIOManager, InputContext, OutputContext
 
 
-class LocalFilesystemIOManager(IOManager):
+class LocalFilesystemIOManager(ConfigurableIOManager):
     """
     IO manager local pour separer le calcul (assets) du stockage (fichiers).
     L'asset renvoie un DataFrame, ce manager se charge de l'ecriture/lecture.
     """
 
-    def __init__(self, base_path: str) -> None:
-        self._base_path = base_path
+    base_path: str
 
     def _get_path(self, asset_key_path: str, partition_key: Optional[str]) -> str:
         if partition_key:
             return os.path.join(
-                self._base_path, asset_key_path, f"{partition_key}.parquet"
+                self.base_path, asset_key_path, f"{partition_key}.parquet"
             )
-        return os.path.join(self._base_path, f"{asset_key_path}.parquet")
+        return os.path.join(self.base_path, f"{asset_key_path}.parquet")
 
     def handle_output(self, context: OutputContext, obj: pd.DataFrame) -> None:
         asset_key_path = "_".join(context.asset_key.path)
