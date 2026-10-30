@@ -4,7 +4,14 @@ from dagster import AssetExecutionContext, MetadataValue, TableRecord, asset
 from .ingestion import DAILY_PARTITIONS
 
 
-@asset(partitions_def=DAILY_PARTITIONS, description="Gold: stats par artiste")
+@asset(
+    partitions_def=DAILY_PARTITIONS,
+    description="Gold: stats par artiste",
+    group_name="gold",
+    kinds={"pandas", "parquet"},
+    owners=["team:data"],
+    tags={"domain": "music"},
+)
 def daily_artist_stats(
     context: AssetExecutionContext, clean_tracks: pd.DataFrame
 ) -> pd.DataFrame:

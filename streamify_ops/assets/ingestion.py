@@ -52,7 +52,14 @@ def _mock_tracks_api(partition_date: str, rows: int = 100) -> pd.DataFrame:
     return pd.DataFrame.from_records(records)
 
 
-@asset(partitions_def=DAILY_PARTITIONS, description="Bronze: API mock -> raw DataFrame")
+@asset(
+    partitions_def=DAILY_PARTITIONS,
+    description="Bronze: API mock -> raw DataFrame",
+    group_name="bronze",
+    kinds={"python", "parquet"},
+    owners=["team:data"],
+    tags={"domain": "music"},
+)
 def raw_tracks_data(
     context: AssetExecutionContext, config: RawTracksConfig
 ) -> pd.DataFrame:

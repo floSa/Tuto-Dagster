@@ -4,7 +4,14 @@ from dagster import AssetCheckResult, AssetExecutionContext, asset, asset_check
 from .ingestion import DAILY_PARTITIONS
 
 
-@asset(partitions_def=DAILY_PARTITIONS, description="Silver: raw -> clean")
+@asset(
+    partitions_def=DAILY_PARTITIONS,
+    description="Silver: raw -> clean",
+    group_name="silver",
+    kinds={"pandas", "parquet"},
+    owners=["team:data"],
+    tags={"domain": "music"},
+)
 def clean_tracks(
     context: AssetExecutionContext, raw_tracks_data: pd.DataFrame
 ) -> pd.DataFrame:

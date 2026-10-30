@@ -30,6 +30,19 @@ def test_quality_check_is_registered():
     assert check_names == {"clean_tracks_id_not_null"}
 
 
+def test_assets_are_grouped_by_layer():
+    graph = defs.resolve_asset_graph()
+
+    groups = {
+        key.path[-1]: graph.get(key).group_name for key in graph.get_all_asset_keys()
+    }
+    assert groups == {
+        "raw_tracks_data": "bronze",
+        "clean_tracks": "silver",
+        "daily_artist_stats": "gold",
+    }
+
+
 def test_check_passes_on_clean_data(tmp_path):
     result = _materialize(tmp_path, null_track_ids=0)
 
