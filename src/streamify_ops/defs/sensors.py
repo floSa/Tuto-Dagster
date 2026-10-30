@@ -19,7 +19,9 @@ def inbox_file_sensor(context: SensorEvaluationContext):
         yield RunRequest(run_key=marker.name, partition_key=marker.stem)
 
 
-@run_failure_sensor(minimum_interval_seconds=10)
+# Les runs de `dg launch` n'ont pas d'emplacement de code d'origine: sans
+# monitor_all_code_locations, le sensor les ignorerait.
+@run_failure_sensor(minimum_interval_seconds=10, monitor_all_code_locations=True)
 def alert_on_run_failure(context: RunFailureSensorContext) -> None:
     """Écrit une alerte dans data/alerts/ pour chaque run en échec."""
     alerts = BASE_DATA_PATH / "alerts"
