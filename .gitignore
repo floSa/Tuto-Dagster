@@ -15,6 +15,8 @@ wheels/
 
 # Dagster
 .dagster_home/
+.tmp_dagster_home_*/
+.docs_capture/
 dagster.yaml
 storage/
 
