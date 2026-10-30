@@ -56,6 +56,14 @@ class LocalFilesystemIOManager(ConfigurableIOManager):
             raise ValueError("asset_key introuvable pour load_input")
 
         asset_key_path = "_".join(asset_key.path)
-        partition_key = context.partition_key if context.has_partition_key else None
-        path = self._get_path(asset_key_path, partition_key)
-        return pd.read_parquet(path)
+        if not context.has_asset_partitions:
+            return pd.read_parquet(self._get_path(asset_key_path, None))
+
+        keys = context.asset_partition_keys
+        if len(keys) == 1:
+            return pd.read_parquet(self._get_path(asset_key_path, keys[0]))
+
+        # Fenetre de plusieurs partitions: les jours pas encore produits sont ignores.
+        paths = [self._get_path(asset_key_path, key) for key in keys]
+        frames = [pd.read_parquet(path) for path in paths if os.path.exists(path)]
+        return pd.concat(frames, ignore_index=True)
