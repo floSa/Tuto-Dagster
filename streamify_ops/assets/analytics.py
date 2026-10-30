@@ -28,7 +28,6 @@ def daily_artist_stats(
     preview = stats.head(5).to_dict(orient="records")
     context.add_output_metadata(
         {
-            "rows": len(stats),
             "preview": MetadataValue.table([TableRecord(row) for row in preview]),
         }
     )

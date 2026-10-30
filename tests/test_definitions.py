@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import pandas as pd
+
 from dagster import (
     AssetKey,
     DefaultScheduleStatus,
@@ -50,6 +52,23 @@ def test_check_passes_on_clean_data(tmp_path):
     evaluations = result.get_asset_check_evaluations()
     assert [(e.partition, e.passed) for e in evaluations] == [("2024-01-15", True)]
     assert (tmp_path / "daily_artist_stats" / "2024-01-15.parquet").exists()
+
+
+def test_materialization_reports_standard_metadata(tmp_path):
+    result = _materialize(tmp_path, null_track_ids=0)
+
+    events = result.get_asset_materialization_events()
+    metadata = {
+        e.asset_key.path[-1]: e.step_materialization_data.materialization.metadata
+        for e in events
+    }
+    silver = metadata["clean_tracks"]
+    assert silver["dagster/row_count"].value == len(
+        pd.read_parquet(tmp_path / "clean_tracks" / "2024-01-15.parquet")
+    )
+    assert "dagster/uri" in silver
+    columns = {c.name for c in silver["dagster/column_schema"].value.columns}
+    assert {"track_id", "genre", "duration_sec"} <= columns
 
 
 def test_failed_check_blocks_downstream_asset(tmp_path):

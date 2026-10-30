@@ -74,5 +74,4 @@ def raw_tracks_data(
     df = _mock_tracks_api(partition_key)
     df.loc[df.index[: config.null_track_ids], "track_id"] = None
 
-    context.add_output_metadata({"rows": len(df), "partition_key": partition_key})
     return df

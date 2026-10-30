@@ -2,7 +2,14 @@ import os
 from typing import Optional
 
 import pandas as pd
-from dagster import ConfigurableIOManager, InputContext, OutputContext
+from dagster import (
+    ConfigurableIOManager,
+    InputContext,
+    MetadataValue,
+    OutputContext,
+    TableColumn,
+    TableSchema,
+)
 
 
 class LocalFilesystemIOManager(ConfigurableIOManager):
@@ -31,7 +38,14 @@ class LocalFilesystemIOManager(ConfigurableIOManager):
             raise TypeError("LocalFilesystemIOManager ne supporte que pandas.DataFrame")
 
         obj.to_parquet(path, index=False)
-        context.add_output_metadata({"path": path, "rows": len(obj)})
+        columns = [TableColumn(name, str(obj[name].dtype)) for name in obj.columns]
+        context.add_output_metadata(
+            {
+                "dagster/uri": MetadataValue.path(path),
+                "dagster/row_count": len(obj),
+                "dagster/column_schema": TableSchema(columns=columns),
+            }
+        )
 
     def load_input(self, context: InputContext) -> pd.DataFrame:
         asset_key = getattr(context, "asset_key", None)

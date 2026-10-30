@@ -1,5 +1,5 @@
 import pandas as pd
-from dagster import AssetCheckResult, AssetExecutionContext, asset, asset_check
+from dagster import AssetCheckResult, asset, asset_check
 
 from .ingestion import DAILY_PARTITIONS
 
@@ -12,9 +12,7 @@ from .ingestion import DAILY_PARTITIONS
     owners=["team:data"],
     tags={"domain": "music"},
 )
-def clean_tracks(
-    context: AssetExecutionContext, raw_tracks_data: pd.DataFrame
-) -> pd.DataFrame:
+def clean_tracks(raw_tracks_data: pd.DataFrame) -> pd.DataFrame:
     """
     Nettoyage simple: normaliser les genres et filtrer les durees negatives.
     """
@@ -23,7 +21,6 @@ def clean_tracks(
     df["genre"] = df["genre"].str.upper()
     df = df[df["duration_sec"] >= 0].reset_index(drop=True)
 
-    context.add_output_metadata({"rows": len(df)})
     return df
 
 
