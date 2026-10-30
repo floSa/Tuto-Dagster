@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from dagster import (
@@ -11,7 +12,9 @@ from .jobs import daily_streamify_job
 from .resources import LocalFilesystemIOManager
 from .schedules import daily_streamify_schedule
 
-BASE_DATA_PATH = Path(__file__).resolve().parents[1] / "data"
+BASE_DATA_PATH = Path(
+    os.environ.get("STREAMIFY_DATA_DIR", Path(__file__).resolve().parents[1] / "data")
+)
 
 assets = load_assets_from_modules([ingestion, transformation, analytics])
 asset_checks = load_asset_checks_from_modules([transformation])
