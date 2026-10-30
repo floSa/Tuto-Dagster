@@ -185,6 +185,12 @@ class Camera:
         self.goto("/asset-groups")
         self.button("Materialize all").click()
         dialog = self.page.get_by_role("dialog")
+        self.page.wait_for_timeout(1500)
+        # Depuis 1.13.25 la fenetre ne propose que les 90 derniers jours.
+        show_all = dialog.get_by_text("Show all partitions")
+        if show_all.count():
+            show_all.click()
+            self.page.wait_for_timeout(1000)
         dialog.get_by_role("button", name="Custom").click()
         field = dialog.get_by_placeholder(re.compile("^ex:"))
         field.fill(partitions)
