@@ -1,6 +1,11 @@
 from datetime import datetime, timezone
 
-from dagster import AssetKey, build_schedule_context, materialize
+from dagster import (
+    AssetKey,
+    DefaultScheduleStatus,
+    build_schedule_context,
+    materialize,
+)
 
 from streamify_ops import assets, asset_checks, defs
 from streamify_ops.resources import LocalFilesystemIOManager
@@ -50,4 +55,8 @@ def test_schedule_targets_previous_day():
         scheduled_execution_time=datetime(2024, 3, 2, tzinfo=timezone.utc)
     )
 
-    assert daily_streamify_schedule(context).partition_key == "2024-03-01"
+    tick = daily_streamify_schedule.evaluate_tick(context)
+
+    assert [r.partition_key for r in tick.run_requests] == ["2024-03-01"]
+    assert daily_streamify_schedule.cron_schedule == "0 0 * * *"
+    assert daily_streamify_schedule.default_status == DefaultScheduleStatus.STOPPED
