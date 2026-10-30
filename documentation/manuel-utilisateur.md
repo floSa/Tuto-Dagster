@@ -2,7 +2,7 @@
 
 Ce manuel présente le projet et sert de référence : ce qu'il fait, comment le lancer, où lire chaque information dans l'interface. Pour apprendre en manipulant, suivez plutôt le [tutoriel pas à pas](../TUTORIAL.md).
 
-> Captures réalisées avec **Dagster 1.13.24**, la version fixée par `uv.lock`. Elles se régénèrent avec une seule commande : voir [§ 9](#9-régénérer-les-captures).
+> Captures réalisées avec **Dagster 1.13.28**, la version fixée par `uv.lock`. Elles se régénèrent avec une seule commande : voir [§ 9](#9-régénérer-les-captures).
 
 ---
 
@@ -146,7 +146,8 @@ Dans l'autre sens, **Materialize all…** dans **Lineage** produit le même rés
 Ces points surprennent souvent et sont illustrés dans le tutoriel.
 
 - **Le check bloque la suite, pas l'écriture de l'asset qu'il contrôle.** Il s'exécute après `clean_tracks` : la partition Silver fautive reste écrite dans `data/clean_tracks/` et apparaît en vert. Seul `daily_artist_stats` est bloqué. Relancez la partition pour remplacer le fichier.
-- **Le résultat du check n'est pas lié à une partition.** Le champ **Partition** du check reste vide et l'interface affiche la dernière évaluation. Un run sain sur n'importe quelle date le fait repasser à **Passed**, même si une autre date reste en échec : pour savoir quelles dates posent problème, regardez la vue **Partitions** de `daily_artist_stats`.
+- **Le check est évalué par partition.** Son onglet **Partitions** donne le résultat de chaque date, et son statut global reste **Failed** tant qu'une date est fautive. Le bouton **Execute** est désactivé : pour le rejouer, relancez la partition. Dagster classe cette fonction en *preview*, pas encore considérée comme prête pour la production.
+- **La fenêtre de lancement ne propose d'abord que les 90 derniers jours.** Pour une date plus ancienne, cliquez sur **Show all partitions** avant **Custom**.
 - **Materialize all ne passe pas par `daily_streamify_job`.** Il lance un job interne nommé `__ASSET_JOB`. Le job nommé n'est utilisé que par le schedule, d'où la mention `Job: None` dans la vue d'une partition.
 - **Un schedule n'agit que si `dagster dev` tourne.** Il se déclenche à 00:00 UTC et traite la veille. Il est arrêté par défaut.
 - **« Preview tick result » n'exécute rien** tant que vous ne cliquez pas sur **Launch all & commit tick result**, qui lance un vrai run.
@@ -162,6 +163,7 @@ Ces points surprennent souvent et sont illustrés dans le tutoriel.
 | Un run lancé en ligne de commande n'apparaît pas dans **Runs** | `DAGSTER_HOME` n'est pas exporté dans ce terminal | Exportez-le dans chaque terminal avec la même valeur |
 | `$DAGSTER_HOME ... is not a directory` | Le dossier n'existe pas encore | `mkdir -p "$DAGSTER_HOME"` |
 | L'interface ne répond pas sur le port 3000 | Le port est déjà pris | `uv run dagster dev -m streamify_ops -p 3001` |
+| `Could not find partition` dans la fenêtre de lancement | La date sort des 90 derniers jours proposés | Cliquez sur **Show all partitions** avant **Custom** |
 | Le check reste en **Not evaluated** | Aucun run n'a encore inclus `clean_tracks` | Matérialisez une partition |
 | Vous voulez repartir de zéro | L'historique et les données sont séparés | Arrêtez le serveur, puis `rm -rf .dagster_home data/*/` et `mkdir -p .dagster_home` |
 

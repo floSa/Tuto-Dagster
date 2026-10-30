@@ -4,7 +4,7 @@ Ce parcours relie, à chaque étape, **ce que vous lancez**, **ce que l'interfac
 
 Vous aurez besoin de **deux terminaux** placés à la racine du projet, et d'un navigateur.
 
-> Les captures viennent d'une exécution réelle de ce parcours sous Dagster 1.13.24. Trois différences sont normales chez vous : les dates d'exécution et les identifiants de runs, le total de partitions qui augmente chaque jour, et les chemins, qui affichent `.docs_capture/data/` sur les captures et `data/` chez vous.
+> Les captures viennent d'une exécution réelle de ce parcours sous Dagster 1.13.28. Trois différences sont normales chez vous : les dates d'exécution et les identifiants de runs, le total de partitions qui augmente chaque jour, et les chemins, qui affichent `.docs_capture/data/` sur les captures et `data/` chez vous.
 
 **Le parcours :**
 
@@ -87,9 +87,10 @@ De près, chaque carte résume l'état d'un asset :
 Matérialiser signifie exécuter le code qui produit un asset et enregistrer le résultat. Vous allez le faire pour une seule journée.
 
 1. Retournez sur **Lineage** et cliquez sur **Materialize all…**.
-2. Cliquez sur **Custom** ①.
-3. Saisissez `2024-01-15` ② et appuyez sur Entrée. Le compteur passe à `1 partition`.
-4. Cliquez sur **Launch 1 run** ③.
+2. Cliquez sur **Show all partitions**, si ce lien apparaît. La fenêtre ne propose d'abord que les 90 derniers jours ; sans ce clic, une date de 2024 donne l'erreur `Could not find partition`.
+3. Cliquez sur **Custom** ①.
+4. Saisissez `2024-01-15` ② et appuyez sur Entrée. Le compteur passe à `1 partition`.
+5. Cliquez sur **Launch 1 run** ③.
 
 ![Fenêtre de lancement avec une partition saisie](documentation/images/04-materialiser-depuis-interface.png)
 
@@ -194,7 +195,7 @@ Les données sont simulées à partir de la date : vous devriez obtenir exacteme
 
 Un backfill produit de nombreuses partitions d'un coup, par exemple après une panne ou à l'ajout d'un nouvel asset.
 
-1. Sur **Lineage**, cliquez sur **Materialize all…**, puis sur **Custom**.
+1. Sur **Lineage**, cliquez sur **Materialize all…**, **Show all partitions**, puis **Custom**.
 2. Saisissez `[2024-02-01...2024-03-01]` ① et appuyez sur Entrée. Le compteur indique `30 partitions`.
 3. Le bouton devient **Launch backfill** ② : cliquez dessus.
 
@@ -260,7 +261,7 @@ dagster._core.errors.DagsterAssetCheckFailedError: 1 blocking asset check failed
 
 ### Le check
 
-**Ouvrez** **Catalog**, `clean_tracks`, **Checks**. Il indique **Failed** ① avec `null_count = 3` ②, et la courbe remonte.
+**Ouvrez** **Catalog**, `clean_tracks`, **Checks**. Il indique **Failed** ① avec `null_count = 3` ②, le champ **Partition** donne `2024-03-15`, et la courbe remonte.
 
 ![Check en échec avec null_count à 3](documentation/images/17-check-en-echec.png)
 
@@ -301,7 +302,7 @@ lignes 94 - track_id vides 3
 
 Vous pouvez aussi fournir la config dans la fenêtre de lancement :
 
-1. Sur **Lineage**, cliquez sur **Materialize all…**, **Custom**, et saisissez `2024-03-20`.
+1. Sur **Lineage**, cliquez sur **Materialize all…**, **Show all partitions**, **Custom**, et saisissez `2024-03-20`.
 2. Dépliez **Config**, puis cliquez sur **Add config**.
 3. Collez le texte ci-dessous, puis cliquez sur **Save config** ①.
 4. Cliquez sur **Launch 1 run**.
@@ -331,7 +332,7 @@ Le check repasse à **Passed** ①, et sa courbe redescend à 0 :
 
 ![Check de nouveau réussi](documentation/images/21-check-repare.png)
 
-> **Attention :** le résultat du check n'est pas lié à une partition, comme le montre le champ **Partition** vide. Si vous n'aviez réparé que le 15 mars, il serait repassé à **Passed** alors que le 20 mars restait fautif. Pour repérer les dates à reprendre, fiez-vous au compteur **Failed** de la vue **Partitions**.
+> **Un résultat par date :** le check est évalué partition par partition. Son onglet **Partitions** indique les dates à reprendre, et le statut global reste **Failed** tant qu'une date est fautive. Le bouton **Execute** est désactivé sur ce check : pour le rejouer, relancez la partition. Dagster classe les checks partitionnés en *preview*, pas encore considérés comme prêts pour la production.
 
 ---
 
@@ -393,7 +394,7 @@ uv run pytest
 ```
 
 ```text
-6 passed, 3 warnings
+6 passed, 4 warnings
 ```
 
 **Regardez maintenant l'interface :** aucun nouveau run, et aucun nouveau fichier dans `data/`. Les tests utilisent une instance temporaire, en mémoire ou dans un dossier jetable. Vous pouvez donc tester le pipeline sans toucher à votre historique.
