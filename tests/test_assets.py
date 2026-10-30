@@ -30,3 +30,5 @@ def test_daily_artist_stats_asset():
 
     assert "artist_name" in stats_df.columns
     assert "track_count" in stats_df.columns
+    assert len(stats_df) <= 20
+    assert stats_df["track_count"].max() > 1

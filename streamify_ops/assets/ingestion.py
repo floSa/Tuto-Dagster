@@ -8,6 +8,18 @@ from faker import Faker
 DAILY_PARTITIONS = DailyPartitionsDefinition(start_date="2024-01-01")
 
 
+def _artist_pool(size: int = 20) -> List[str]:
+    """
+    Catalogue fixe d'artistes: un meme artiste revient plusieurs fois par jour.
+    """
+    faker = Faker()
+    faker.seed_instance(2024)
+    return [faker.name() for _ in range(size)]
+
+
+ARTISTS = _artist_pool()
+
+
 def _mock_tracks_api(partition_date: str, rows: int = 100) -> pd.DataFrame:
     """
     Simuler une reponse d'API musicale pour une date donnee.
@@ -24,7 +36,7 @@ def _mock_tracks_api(partition_date: str, rows: int = 100) -> pd.DataFrame:
             {
                 "track_id": faker.uuid4(),
                 "track_name": faker.sentence(nb_words=3).replace(".", ""),
-                "artist_name": faker.name(),
+                "artist_name": faker.random_element(elements=ARTISTS),
                 "genre": faker.random_element(elements=genres),
                 "duration_sec": faker.random_int(min=-30, max=420),
                 "release_date": faker.date_this_decade().isoformat(),
