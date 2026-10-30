@@ -4,12 +4,14 @@ import pandas as pd
 
 from dagster import (
     AssetKey,
+    DagsterEventType,
     DefaultScheduleStatus,
     build_schedule_context,
     materialize,
 )
 
 from streamify_ops import assets, asset_checks, defs
+from streamify_ops.assets.ingestion import raw_tracks_data
 from streamify_ops.resources import LocalFilesystemIOManager
 from streamify_ops.schedules import daily_streamify_schedule
 from streamify_ops.settings import FRESHNESS_FAIL, FRESHNESS_WARN
@@ -88,6 +90,20 @@ def test_failed_check_blocks_downstream_asset(tmp_path):
     materialized = {e.asset_key for e in result.get_asset_materialization_events()}
     assert AssetKey("clean_tracks") in materialized
     assert AssetKey("daily_artist_stats") not in materialized
+
+
+def test_raw_tracks_retries_after_a_transient_failure(tmp_path):
+    result = materialize(
+        [raw_tracks_data],
+        partition_key="2024-01-15",
+        resources={"io_manager": LocalFilesystemIOManager(base_path=str(tmp_path))},
+        run_config={"ops": {"raw_tracks_data": {"config": {"fail_attempts": 1}}}},
+    )
+
+    assert result.success
+    events = [e.event_type for e in result.all_events]
+    assert DagsterEventType.STEP_UP_FOR_RETRY in events
+    assert DagsterEventType.STEP_RESTARTED in events
 
 
 def test_schedule_targets_previous_day():
