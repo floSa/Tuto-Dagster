@@ -53,10 +53,13 @@ def artist_stats_table(
     )
 
 
+# Dans un module qui contient un @definitions, Dagster ne charge que ce qu'il
+# renvoie: l'asset doit y figurer, sinon il disparait sans erreur.
 @definitions
-def postgres_resource() -> Definitions:
+def postgres_export() -> Definitions:
     return Definitions(
+        assets=[artist_stats_table],
         resources={
             "postgres": PostgresResource(password=EnvVar("STREAMIFY_PG_PASSWORD"))
-        }
+        },
     )

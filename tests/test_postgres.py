@@ -2,10 +2,13 @@ import os
 
 import psycopg
 import pytest
-from dagster import materialize
+from dagster import AssetKey, materialize
 
 from pipeline import asset_checks, assets
-from streamify_ops.optional.artist_stats_table import artist_stats_table
+from streamify_ops.optional.artist_stats_table import (
+    artist_stats_table,
+    postgres_export,
+)
 from streamify_ops.resources import LocalFilesystemIOManager, PostgresResource
 
 PASSWORD = os.environ.get("STREAMIFY_PG_PASSWORD")
@@ -76,6 +79,16 @@ def test_other_partitions_are_kept(tmp_path, table):
 
     assert _count(table, "2024-01-15") == first
     assert _count(table, "2024-01-16")[0] > 0
+
+
+def test_definitions_declare_the_asset_and_its_resource():
+    defs = postgres_export()
+
+    assert (
+        AssetKey("artist_stats_table")
+        in defs.resolve_asset_graph().get_all_asset_keys()
+    )
+    assert "postgres" in defs.resources
 
 
 def test_database_outage_only_fails_the_export(tmp_path):
