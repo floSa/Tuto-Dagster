@@ -7,7 +7,7 @@ services:
       POSTGRES_DB: streamify
       POSTGRES_PASSWORD: ${STREAMIFY_PG_PASSWORD:?Exportez STREAMIFY_PG_PASSWORD}
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - streamify_pg:/var/lib/postgresql/data
     healthcheck:
