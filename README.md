@@ -6,14 +6,14 @@ Banc d'essai pour apprendre l'orchestrateur de données **Dagster** sur un petit
 
 ## Documentation
 
-| Vous voulez… | Lisez |
+| Objectif | À lire |
 |---|---|
 | Comprendre le projet et retrouver une information | [Manuel utilisateur](documentation/manuel-utilisateur.md) |
 | Apprendre en manipulant : commande, écran, fichier, étape par étape | [Tutoriel](TUTORIAL.md) |
 
 ## Démarrage rapide
 
-Il vous faut [`uv`](https://docs.astral.sh/uv/) ; il installe lui-même Python 3.12.
+Prérequis : [`uv`](https://docs.astral.sh/uv/), qui installe lui-même Python 3.12.
 
 ```bash
 uv sync --extra dev
@@ -31,7 +31,7 @@ mkdir -p "$DAGSTER_HOME"
 uv run dg dev
 ```
 
-Ouvrez ensuite [http://localhost:3000](http://localhost:3000). Exportez `DAGSTER_HOME` dans chaque terminal utilisé : c'est ce qui relie vos commandes à l'interface.
+Ouvrir ensuite [http://localhost:3000](http://localhost:3000). Exporter `DAGSTER_HOME` dans chaque terminal utilisé : c'est ce qui relie les commandes à l'interface.
 
 ## Ce que le pipeline met en œuvre
 
