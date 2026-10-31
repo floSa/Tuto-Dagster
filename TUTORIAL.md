@@ -1,6 +1,6 @@
 # Tutoriel — Dagster par la pratique
 
-Ce parcours relie, à chaque étape, **ce que vous lancez**, **ce que l'interface affiche** et **ce qui apparaît sur le disque**. Comptez environ 30 minutes pour les étapes 1 à 8, et 30 de plus pour automatiser le pipeline à l'étape 9. Pour la présentation du projet et les informations de référence, voir le [manuel utilisateur](documentation/manuel-utilisateur.md).
+Ce parcours relie, à chaque étape, **ce que vous lancez**, **ce que l'interface affiche** et **ce qui apparaît sur le disque**. Comptez environ 30 minutes pour les étapes 1 à 8, 30 de plus pour automatiser le pipeline à l'étape 9, et 15 pour PostgreSQL à l'étape 10. Pour la présentation du projet et les informations de référence, voir le [manuel utilisateur](documentation/manuel-utilisateur.md).
 
 Vous aurez besoin de **deux terminaux** placés à la racine du projet, et d'un navigateur.
 
@@ -17,7 +17,8 @@ Vous aurez besoin de **deux terminaux** placés à la racine du projet, et d'un 
 7. [Provoquer un problème de qualité](#7-provoquer-un-problème-de-qualité)
 8. [Activer le schedule](#8-activer-le-schedule)
 9. [Automatiser le pipeline](#9-automatiser-le-pipeline)
-10. [Lancer les tests](#10-lancer-les-tests)
+10. [Publier dans PostgreSQL](#10-publier-dans-postgresql)
+11. [Lancer les tests](#11-lancer-les-tests)
 
 ---
 
@@ -685,6 +686,8 @@ Plus rien ne met Gold à jour. Après quelques minutes, le statut passe à **War
 
 ![Fraîcheur en échec](documentation/images/36-fraicheur-echec.png)
 
+> **À éviter :** `daily_streamify_schedule` et `default_automation_condition_sensor` actifs en même temps. Le schedule traite la veille à 00:00 UTC, puis le cron la recalcule à 01:00 UTC. [`test_automation.py`](tests/test_automation.py) le montre en temps simulé. Choisir l'un ou l'autre.
+
 Une politique de fraîcheur ne lance rien : elle signale. Pour y réagir automatiquement, combinez-la avec une condition d'automatisation ou un sensor.
 
 **Pour quitter le mode accéléré,** dans le terminal 1 : `Ctrl+C`, puis :
@@ -699,7 +702,122 @@ uv run dg dev
 
 ---
 
-## 10. Lancer les tests
+## 10. Publier dans PostgreSQL
+
+Les fichiers Parquet conviennent au pipeline, mais un outil de restitution lit plutôt une base de données. Cette étape publie Gold dans une table PostgreSQL. Elle montre aussi une **ressource** : un objet de connexion déclaré une seule fois, puis injecté dans les assets qui le demandent. Docker est nécessaire. La base écoute sur le port 5434, pour ne pas gêner une éventuelle installation existante.
+
+### 10.1 Démarrer la base
+
+**Dans le terminal 1,** arrêter le serveur avec `Ctrl+C`, définir le mot de passe, démarrer la base, puis relancer le serveur :
+
+```bash
+export STREAMIFY_PG_PASSWORD=streamify
+```
+
+```bash
+docker compose up -d --wait
+```
+
+```bash
+uv run dg dev
+```
+
+**Dans le terminal 2,** définir la même variable, puis activer l'export. Comme à l'étape 9.5, tout fichier placé dans `defs/` est chargé :
+
+```bash
+export STREAMIFY_PG_PASSWORD=streamify
+```
+
+```bash
+cp src/streamify_ops/optional/artist_stats_table.py src/streamify_ops/defs/assets/
+```
+
+**Dans le navigateur,** cliquer sur **Reload definitions** en haut à droite de **Lineage**.
+
+### 10.2 Écrire dans la table
+
+**Dans le terminal 2 :**
+
+```bash
+uv run dg launch --assets artist_stats_table --partition 2024-02-20
+```
+
+**Dans la base :**
+
+```bash
+docker compose exec -T postgres psql -U streamify -c "SELECT * FROM artist_stats ORDER BY track_count DESC, artist_name LIMIT 3"
+```
+
+```text
+ partition_date |  artist_name   | track_count 
+----------------+----------------+-------------
+ 2024-02-20     | Jennifer Moran |           8
+ 2024-02-20     | Danny Smith    |           7
+ 2024-02-20     | James Rogers   |           6
+(3 rows)
+```
+
+**Dans le navigateur,** ouvrir **Catalog**, puis `artist_stats_table`. Le nombre de lignes ① et le type **Postgres** ② viennent de l'asset :
+
+![Asset artist_stats_table dans le catalogue](documentation/images/37-export-postgres.png)
+
+Le code reçoit la connexion en paramètre : `postgres: PostgresResource`. Le mot de passe n'y figure pas, seule `EnvVar("STREAMIFY_PG_PASSWORD")` y renvoie. La page de la ressource, accessible depuis **Deployment**, emplacement de code, onglet **Resources**, affiche le nom de la variable ① et non sa valeur :
+
+![Ressource postgres : mot de passe lu dans une variable d'environnement](documentation/images/40-ressource-postgres.png)
+
+Relancer une date ne crée pas de doublon : l'asset remplace les lignes de la partition dans une seule transaction.
+
+### 10.3 Reprendre après une panne
+
+Une panne de la base ne doit pas obliger à tout recalculer. **Dans le terminal 2,** arrêter la base :
+
+```bash
+docker compose stop postgres
+```
+
+**Dans le navigateur,** sur **Lineage**, cliquer sur **Materialize all…**, **Show all partitions**, **Custom**, saisir `2024-08-01`, puis **Launch 1 run**.
+
+Le run s'arrête en **Failure** ① sur `artist_stats_table` ②, avec l'erreur `Connection refused` : Bronze, Silver, le check et Gold ont réussi.
+
+**Dans le terminal 2,** redémarrer la base :
+
+```bash
+docker compose up -d --wait
+```
+
+**Dans le navigateur,** sur la page du run, ouvrir la flèche à droite de **Re-execute all (\*)**, puis cliquer sur **From failure** ③ :
+
+![Menu de relance sur le run en échec](documentation/images/38-relance-apres-echec.png)
+
+Un nouveau run démarre et se termine en **Success** ① ②. Le panneau **Re-executions** le rattache au run d'origine. Seule l'étape `artist_stats_table` s'exécute : Gold est relu depuis le fichier déjà écrit, sans repasser par les étapes précédentes.
+
+![Relance réussie, rattachée au run d'origine](documentation/images/39-relance-reussie.png)
+
+**Dans la base :**
+
+```bash
+docker compose exec -T postgres psql -U streamify -c "SELECT partition_date, count(*) FROM artist_stats GROUP BY partition_date ORDER BY partition_date"
+```
+
+```text
+ partition_date | count 
+----------------+-------
+ 2024-02-20     |    20
+ 2024-08-01     |    20
+(2 rows)
+```
+
+> **Limite observée :** sur un run lancé par `dg launch`, **From failure** échoue avec `CheckError: Expected non-None value: None`. Ces runs ne portent pas d'emplacement de code d'origine. Pour pouvoir les relancer depuis l'interface, les lancer depuis l'interface.
+
+Retirer l'asset, puis cliquer de nouveau sur **Reload definitions** :
+
+```bash
+rm src/streamify_ops/defs/assets/artist_stats_table.py
+```
+
+---
+
+## 11. Lancer les tests
 
 **Dans le terminal 2 :**
 
@@ -708,10 +826,12 @@ uv run pytest
 ```
 
 ```text
-18 passed, 11 warnings
+23 passed, 14 warnings
 ```
 
 **Regardez maintenant l'interface :** aucun nouveau run, et aucun nouveau fichier dans `data/`. Les tests utilisent une instance temporaire, en mémoire ou dans un dossier jetable. Vous pouvez donc tester le pipeline sans toucher à votre historique.
+
+Sans `STREAMIFY_PG_PASSWORD`, les deux tests qui exigent une vraie base sont ignorés : `21 passed, 2 skipped`. Ces tests suppriment la table `artist_stats` de la base du tutoriel.
 
 Ils vérifient aussi ce que vous venez d'observer : un échec du check bloque Gold, le schedule vise la veille, le retry reprend après une panne, les sensors réagissent, et les conditions d'automatisation se déclenchent au bon moment. Pour ces dernières, `evaluate_automation_conditions` simule l'écoulement du temps sans service d'arrière-plan.
 
@@ -719,7 +839,13 @@ Ils vérifient aussi ce que vous venez d'observer : un échec du check bloque Go
 
 ## Pour finir
 
-Arrêtez le serveur avec `Ctrl+C` dans le terminal 1. Votre historique reste dans `.dagster_home/` et vos données dans `data/` : ils seront là au prochain lancement.
+Arrêtez le serveur avec `Ctrl+C` dans le terminal 1, puis supprimez la base et ses données :
+
+```bash
+docker compose down -v
+```
+
+Votre historique reste dans `.dagster_home/` et vos données dans `data/` : ils seront là au prochain lancement.
 
 Pour explorer le code derrière ce que vous avez vu :
 
@@ -735,3 +861,6 @@ Pour explorer le code derrière ce que vous avez vu :
 | Les sensors de fichier et d'échec | [`sensors.py`](src/streamify_ops/defs/sensors.py) |
 | Le cumul sur 7 jours | [`weekly_artist_stats.py`](src/streamify_ops/optional/weekly_artist_stats.py) |
 | Le mode accéléré | [`settings.py`](src/streamify_ops/settings.py) |
+| La connexion à PostgreSQL | [`postgres.py`](src/streamify_ops/resources/postgres.py) |
+| L'export vers la table `artist_stats` | [`artist_stats_table.py`](src/streamify_ops/optional/artist_stats_table.py) |
+| La base du tutoriel | [`docker-compose.yml`](docker-compose.yml) |
