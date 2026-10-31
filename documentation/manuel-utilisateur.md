@@ -1,6 +1,6 @@
 # Manuel utilisateur — Dagster Test Bench
 
-Ce manuel présente le projet et sert de référence : ce qu'il fait, comment le lancer, où lire chaque information dans l'interface. Pour apprendre en manipulant, suivez plutôt le [tutoriel pas à pas](../TUTORIAL.md).
+Ce manuel présente le projet et sert de référence : ce qu'il fait, comment le lancer, où lire chaque information dans l'interface. Pour apprendre en manipulant, suivre plutôt le [tutoriel pas à pas](../TUTORIAL.md).
 
 > Captures réalisées avec **Dagster 1.13.28**, la version fixée par `uv.lock`. Elles se régénèrent avec une seule commande : voir [§ 10](#10-régénérer-les-captures).
 
@@ -8,16 +8,16 @@ Ce manuel présente le projet et sert de référence : ce qu'il fait, comment le
 
 ## 1. En bref
 
-**Dagster Test Bench** est un banc d'essai pour découvrir l'orchestrateur de données [Dagster](https://dagster.io). Il fait tourner un petit pipeline musical, *Streamify-Ops*, sur votre machine, sans base de données ni service externe.
+**Dagster Test Bench** est un banc d'essai pour découvrir l'orchestrateur de données [Dagster](https://dagster.io). Il fait tourner un petit pipeline musical, *Streamify-Ops*, sur la machine locale, sans base de données ni service externe.
 
 | | |
 |---|---|
 | **Pour qui** | Toute personne qui veut comprendre Dagster en le voyant fonctionner |
-| **Ce que vous obtenez** | Un pipeline à trois étages, partitionné par jour, avec contrôle qualité, rattrapage, planification et automatisation |
+| **Résultat obtenu** | Un pipeline à trois étages, partitionné par jour, avec contrôle qualité, rattrapage, planification et automatisation |
 | **Données** | Simulées avec Faker : 100 écoutes fictives par jour, à partir du 2024-01-01 |
 | **Ce que ce n'est pas** | Un modèle de production : le stockage est local et il n'y a ni authentification ni déploiement |
 
-Dagster raisonne en **données à produire** (*assets*) plutôt qu'en tâches à enchaîner. Vous déclarez chaque table et ce dont elle dépend ; Dagster en déduit l'ordre d'exécution et garde l'historique de chacune.
+Dagster raisonne en **données à produire** (*assets*) plutôt qu'en tâches à enchaîner. Chaque table est déclarée avec ses dépendances ; Dagster en déduit l'ordre d'exécution et garde l'historique de chacune.
 
 ---
 
@@ -65,7 +65,7 @@ Le check `clean_tracks_id_not_null` vérifie qu'aucun `track_id` n'est vide. S'i
 | **Sensor** | Un code exécuté à intervalle régulier, qui peut lancer un run | **Automation** | [`sensors.py`](../src/streamify_ops/defs/sensors.py) |
 | **Politique de fraîcheur** | Le délai au-delà duquel un asset est signalé comme périmé | **Catalog** → asset → **Overview** | `FreshnessPolicy` |
 | **Retry** | Une nouvelle tentative après l'échec d'une étape | **Runs** → run | `RetryPolicy` |
-| **Ressource** | Un objet de connexion injecté dans les assets qui le demandent | **Deployment** → emplacement de code → **Resources** | [`PostgresResource`](../src/streamify_ops/resources/postgres.py) |
+| **Ressource** | Un objet de connexion injecté dans les assets qui le demandent | **Deployment** → emplacement de code → **Definitions** → **Resources** | [`PostgresResource`](../src/streamify_ops/resources/postgres.py) |
 
 ---
 
@@ -89,11 +89,11 @@ mkdir -p "$DAGSTER_HOME"
 uv run dg dev
 ```
 
-L'interface s'ouvre sur [http://localhost:3000](http://localhost:3000). Le serveur occupe le terminal : lancez vos autres commandes dans un second terminal.
+L'interface s'ouvre sur [http://localhost:3000](http://localhost:3000). Le serveur occupe le terminal : les autres commandes se lancent dans un second terminal.
 
-> **`DAGSTER_HOME` est indispensable pour ce projet.** C'est le dossier où Dagster garde l'historique. Exportez-le dans **chaque** terminal : sans lui, une commande ne parle pas à la même instance que l'interface, et son run n'y apparaît pas.
+> **`DAGSTER_HOME` est indispensable pour ce projet.** C'est le dossier où Dagster garde l'historique. L'exporter dans **chaque** terminal : sans lui, une commande ne parle pas à la même instance que l'interface, et son run n'y apparaît pas.
 
-Au premier lancement, une fenêtre propose de rejoindre la communauté Dagster. Cliquez sur **Skip** ; aucune adresse e-mail n'est nécessaire.
+Au premier lancement, une fenêtre propose de rejoindre la communauté Dagster. Cliquer sur **Skip** ; aucune adresse e-mail n'est nécessaire.
 
 ![Fenêtre d'accueil au premier lancement](images/01-fenetre-accueil.png)
 
@@ -123,7 +123,7 @@ Au premier lancement, une fenêtre propose de rejoindre la communauté Dagster. 
 
 ### Lire la vue des partitions
 
-Une barre résume tout l'historique : **vert** pour une partition produite, **rouge** pour un échec, **gris** pour une partition manquante. Cliquez sur une date pour lire ses métadonnées.
+Une barre résume tout l'historique : **vert** pour une partition produite, **rouge** pour un échec, **gris** pour une partition manquante. Cliquer sur une date pour lire ses métadonnées.
 
 ![Vue des partitions après un backfill](images/13-partitions-apres-backfill.png)
 
@@ -133,7 +133,7 @@ Une barre résume tout l'historique : **vert** pour une partition produite, **ro
 
 Toutes ces commandes supposent `DAGSTER_HOME` exporté et `uv run` en préfixe, et s'exécutent depuis la racine du projet.
 
-| Commande | Ce que vous voyez dans l'interface | Ce qui change sur le disque |
+| Commande | Visible dans l'interface | Ce qui change sur le disque |
 |---|---|---|
 | `dg dev` | L'interface et le graphe | `.dagster_home/` se remplit |
 | `dg check defs` | Rien : vérifie que les définitions se chargent | Rien |
@@ -147,7 +147,7 @@ Toutes ces commandes supposent `DAGSTER_HOME` exporté et `uv run` en préfixe, 
 | `dg launch --assets artist_stats_table --partition 2024-02-20`, asset activé | Un run dans **Runs** ; **Row count** sur l'asset | Rien dans `data/` : 20 lignes dans la table `artist_stats` |
 | `dagster sensor start -m streamify_ops.definitions inbox_file_sensor` | L'interrupteur du sensor s'active | Rien |
 | `touch data/inbox/2024-04-10.ready`, sensor actif | Un run de `daily_streamify_job` | `data/*/2024-04-10.parquet`, 3 fichiers |
-| `pytest` | **Rien** : les tests n'utilisent pas votre instance | **Rien** : ils écrivent en mémoire ou en dossier temporaire |
+| `pytest` | **Rien** : les tests n'utilisent pas l'instance locale | **Rien** : ils écrivent en mémoire ou en dossier temporaire |
 
 Dans l'autre sens, **Materialize all…** dans **Lineage** produit le même résultat qu'une commande `dg launch`. L'interface et la ligne de commande ne sont que deux façons de piloter la même instance.
 
@@ -157,18 +157,18 @@ Dans l'autre sens, **Materialize all…** dans **Lineage** produit le même rés
 
 Ces points surprennent souvent et sont illustrés dans le tutoriel.
 
-- **Le check bloque la suite, pas l'écriture de l'asset qu'il contrôle.** Il s'exécute après `clean_tracks` : la partition Silver fautive reste écrite dans `data/clean_tracks/` et apparaît en vert. Seul `daily_artist_stats` est bloqué. Relancez la partition pour remplacer le fichier.
-- **Le check est évalué par partition.** Son onglet **Partitions** donne le résultat de chaque date, et son statut global reste **Failed** tant qu'une date est fautive. Le bouton **Execute** est désactivé : pour le rejouer, relancez la partition. Dagster classe cette fonction en *preview*, pas encore considérée comme prête pour la production.
-- **La fenêtre de lancement ne propose d'abord que les 90 derniers jours.** Pour une date plus ancienne, cliquez sur **Show all partitions** avant **Custom**.
+- **Le check bloque la suite, pas l'écriture de l'asset qu'il contrôle.** Il s'exécute après `clean_tracks` : la partition Silver fautive reste écrite dans `data/clean_tracks/` et apparaît en vert. Seul `daily_artist_stats` est bloqué. Relancer la partition pour remplacer le fichier.
+- **Le check est évalué par partition.** Son onglet **Partitions** donne le résultat de chaque date, et son statut global reste **Failed** tant qu'une date est fautive. Le bouton **Execute** est désactivé : pour le rejouer, relancer la partition. Dagster classe cette fonction en *preview*, pas encore considérée comme prête pour la production.
+- **La fenêtre de lancement ne propose d'abord que les 90 derniers jours.** Pour une date plus ancienne, cliquer sur **Show all partitions** avant **Custom**.
 - **Materialize all ne passe pas par `daily_streamify_job`.** Il lance un job interne nommé `__ASSET_JOB`. Le job nommé n'est utilisé que par le schedule, d'où la mention `Job: None` dans la vue d'une partition.
 - **Un schedule n'agit que si `dg dev` tourne.** Il se déclenche à 00:00 UTC et traite la veille. Il est arrêté par défaut.
 - **Les automatismes sont arrêtés par défaut,** y compris `default_automation_condition_sensor`, sans lequel aucune condition d'automatisation n'est évaluée.
 - **`eager()` et `on_cron()` ne traitent que la dernière partition complète,** c'est-à-dire la veille. Modifier une date de 2024 ne déclenche rien.
-- **Les commandes `dg launch` passent à côté de la file d'attente :** `max_concurrent_runs` ne limite que les runs lancés par l'interface, un sensor ou un schedule.
+- **`dg launch` passe à côté de la file d'attente.** Testé avec `max_concurrent_runs: 0` : le run s'exécute quand même. Les runs lancés par un sensor, eux, attendent leur tour.
 - **Schedule et cron déclaratif recalculent deux fois la même journée.** Actifs ensemble, ils traitent la veille à 00:00 puis à 01:00 UTC, comme le montre un test en temps simulé. Choisir l'un ou l'autre.
 - **From failure ne fonctionne pas sur un run de `dg launch`.** L'interface affiche `CheckError: Expected non-None value: None`. Sur un run lancé depuis l'interface, la relance ne rejoue que les étapes en échec.
-- **`dg` ne pilote pas les schedules et les sensors.** Utilisez `dagster` avec `-m streamify_ops.definitions`. `code_location_name`, dans `pyproject.toml`, donne le même nom à l'emplacement de code pour que l'interface voie les états démarrés ainsi.
-- **« Preview tick result » n'exécute rien** tant que vous ne cliquez pas sur **Launch all & commit tick result**, qui lance un vrai run.
+- **`dg` ne pilote pas les schedules et les sensors.** Utiliser `dagster` avec `-m streamify_ops.definitions`. `code_location_name`, dans `pyproject.toml`, donne le même nom à l'emplacement de code pour que l'interface voie les états démarrés ainsi.
+- **« Preview tick result » n'exécute rien** tant qu'un clic sur **Launch all & commit tick result** n'a pas eu lieu ; ce bouton lance un vrai run.
 - **Un backfill lance un run par partition.** Sur la machine de test, 30 partitions ont pris 2 à 3 minutes.
 
 ---
@@ -199,23 +199,23 @@ Tout est illustré à l'[étape 9 du tutoriel](../TUTORIAL.md#9-automatiser-le-p
 | Symptôme | Cause | Solution |
 |---|---|---|
 | `Failed to spawn: dagster` | Le `.venv` a été créé avant le déplacement ou le renommage du dossier | `uv venv --clear --python 3.12`, puis `uv sync --extra dev` |
-| Un run lancé en ligne de commande n'apparaît pas dans **Runs** | `DAGSTER_HOME` n'est pas exporté dans ce terminal | Exportez-le dans chaque terminal avec la même valeur |
+| Un run lancé en ligne de commande n'apparaît pas dans **Runs** | `DAGSTER_HOME` n'est pas exporté dans ce terminal | L'exporter dans chaque terminal avec la même valeur |
 | `$DAGSTER_HOME ... is not a directory` | Le dossier n'existe pas encore | `mkdir -p "$DAGSTER_HOME"` |
 | L'interface ne répond pas sur le port 3000 | Le port est déjà pris | `uv run dg dev --port 3001` |
-| `Could not find partition` dans la fenêtre de lancement | La date sort des 90 derniers jours proposés | Cliquez sur **Show all partitions** avant **Custom** |
+| `Could not find partition` dans la fenêtre de lancement | La date sort des 90 derniers jours proposés | Cliquer sur **Show all partitions** avant **Custom** |
 | Un asset de `defs/` n'apparaît pas | Le serveur n'a pas relu le code | **Reload definitions** en haut de **Lineage** |
 | `environment variable "STREAMIFY_PG_PASSWORD" which is not set` | La variable manque dans ce terminal, ou le serveur a démarré sans elle | L'exporter, puis relancer `dg dev` si besoin. `dg check defs` ne détecte pas ce cas : la valeur n'est lue qu'à l'exécution |
 | `Connection refused` sur le port 5434 | La base est arrêtée | `docker compose up -d --wait` |
 | `Exportez STREAMIFY_PG_PASSWORD` | `docker compose` a besoin de la variable, y compris pour `stop` et `down` | L'exporter dans ce terminal |
-| Une condition d'automatisation ne déclenche rien | Le sensor est arrêté, ou vous visez une ancienne date | `dagster sensor start -m streamify_ops.definitions default_automation_condition_sensor`, puis visez la veille |
-| Le check reste en **Not evaluated** | Aucun run n'a encore inclus `clean_tracks` | Matérialisez une partition |
-| Vous voulez repartir de zéro | L'historique et les données sont séparés | Arrêtez le serveur, puis `rm -rf .dagster_home data/*/` et `mkdir -p .dagster_home` |
+| Une condition d'automatisation ne déclenche rien | Le sensor est arrêté, ou la date visée est ancienne | `dagster sensor start -m streamify_ops.definitions default_automation_condition_sensor`, puis viser la veille |
+| Le check reste en **Not evaluated** | Aucun run n'a encore inclus `clean_tracks` | Matérialiser une partition |
+| Repartir de zéro | L'historique et les données sont séparés | Arrêter le serveur, puis `rm -rf .dagster_home data/*/` et `mkdir -p .dagster_home` |
 
 ---
 
 ## 10. Régénérer les captures
 
-Le script rejoue le tutoriel sur une instance jetable, dans `.docs_capture/`, sans toucher à vos données ni à votre historique. Docker est nécessaire. Comptez environ 25 minutes.
+Le script rejoue le tutoriel sur une instance jetable, dans `.docs_capture/`, sans toucher aux données ni à l'historique existants. Docker est nécessaire. Durée : environ 25 minutes.
 
 ```bash
 uv run --with playwright playwright install chromium
@@ -225,4 +225,4 @@ uv run --with playwright playwright install chromium
 uv run --with playwright --with pillow python scripts/capture_docs.py
 ```
 
-Il remplace le contenu de `documentation/images/` et conserve les sorties brutes des commandes dans `.docs_capture/cli/`. Sur les captures, les chemins contiennent donc `.docs_capture/data/` là où vous verrez `data/`.
+Il remplace le contenu de `documentation/images/` et conserve les sorties brutes des commandes dans `.docs_capture/cli/`. Sur les captures, les chemins contiennent donc `.docs_capture/data/` là où `data/` apparaît en usage normal.
