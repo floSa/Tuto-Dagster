@@ -1,6 +1,6 @@
 # Manuel utilisateur — Dagster Test Bench
 
-Ce manuel présente le projet et sert de référence : ce qu'il fait, comment le lancer, où lire chaque information dans l'interface. Pour apprendre en manipulant, suivre plutôt le [tutoriel pas à pas](../TUTORIAL.md).
+Ce manuel présente le projet et sert de référence : ce qu'il fait, comment le lancer, où lire chaque information dans l'interface. Pour apprendre en manipulant, suivre plutôt le [tutoriel pas à pas](../TUTORIAL.md). Pour la structure technique, voir [l'architecture](architecture.md) ; pour les données, [le stockage](STORAGE.md) ; pour les secrets et l'exposition réseau, [la sécurité](SECURITY.md).
 
 > Captures réalisées avec **Dagster 1.13.28**, la version fixée par `uv.lock`. Elles se régénèrent avec une seule commande : voir [§ 10](#10-régénérer-les-captures).
 
@@ -207,6 +207,7 @@ Tout est illustré à l'[étape 9 du tutoriel](../TUTORIAL.md#9-automatiser-le-p
 | `environment variable "STREAMIFY_PG_PASSWORD" which is not set` | La variable manque dans ce terminal, ou le serveur a démarré sans elle | L'exporter, puis relancer `dg dev` si besoin. `dg check defs` ne détecte pas ce cas : la valeur n'est lue qu'à l'exécution |
 | `Connection refused` sur le port 5434 | La base est arrêtée | `docker compose up -d --wait` |
 | `Exportez STREAMIFY_PG_PASSWORD` | `docker compose` a besoin de la variable, y compris pour `stop` et `down` | L'exporter dans ce terminal |
+| `test_assets_are_grouped_by_layer` échoue | Un asset optionnel est resté copié dans `defs/assets/` | Le retirer : ce test attend les trois assets du parcours principal |
 | Une condition d'automatisation ne déclenche rien | Le sensor est arrêté, ou la date visée est ancienne | `dagster sensor start -m streamify_ops.definitions default_automation_condition_sensor`, puis viser la veille |
 | Le check reste en **Not evaluated** | Aucun run n'a encore inclus `clean_tracks` | Matérialiser une partition |
 | Repartir de zéro | L'historique et les données sont séparés | Arrêter le serveur, puis `rm -rf .dagster_home data/*/` et `mkdir -p .dagster_home` |
