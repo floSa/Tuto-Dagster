@@ -8,6 +8,22 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    env:
+      STREAMIFY_PG_PASSWORD: streamify
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: streamify
+          POSTGRES_DB: streamify
+          POSTGRES_PASSWORD: streamify
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U streamify -d streamify"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
