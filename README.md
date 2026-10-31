@@ -41,6 +41,7 @@ Ouvrez ensuite [http://localhost:3000](http://localhost:3000). Exportez `DAGSTER
 - **IO Manager personnalisé :** écriture et lecture en Parquet dans `data/`, avec les métadonnées standard de Dagster.
 - **Job et schedule quotidiens,** arrêtés par défaut, qui traitent la veille à 00:00 UTC.
 - **Automatisation :** Declarative Automation, sensors de fichier et d'échec, politique de fraîcheur, retries, file d'attente des runs, dépendance entre partitions.
+- **PostgreSQL :** ressource configurable, mot de passe lu dans l'environnement, export de Gold et relance après une panne de la base. Docker est nécessaire pour cette partie uniquement.
 - **Structure `dg` :** tout ce qui est placé dans `src/streamify_ops/defs/` est chargé automatiquement.
 
 ## Arborescence
@@ -60,9 +61,11 @@ Dagster-Test-Bench/
 │   │   ├── schedules.py                    # daily_streamify_schedule
 │   │   └── sensors.py                      # Arrivée de fichier, échec de run
 │   ├── optional/
-│   │   └── weekly_artist_stats.py          # Cumul sur 7 jours, à copier dans defs/assets/
+│   │   ├── weekly_artist_stats.py          # Cumul sur 7 jours, à copier dans defs/assets/
+│   │   └── artist_stats_table.py           # Export PostgreSQL, à copier dans defs/assets/
 │   └── resources/
-│       └── local_filesystem_io_manager.py  # Stockage Parquet
+│       ├── local_filesystem_io_manager.py  # Stockage Parquet
+│       └── postgres.py                     # Connexion PostgreSQL
 ├── tests/                                  # Assets, check, schedule, sensors, automatisation
 ├── scripts/capture_docs.py                 # Régénère les captures de la documentation
 ├── documentation/
@@ -70,6 +73,7 @@ Dagster-Test-Bench/
 │   └── images/
 ├── data/                                   # Fichiers Parquet produits (non versionnés)
 ├── .github/workflows/ci.yml                # black, dg check defs, pytest
+├── docker-compose.yml                      # Base PostgreSQL du tutoriel
 ├── LICENSE
 ├── pyproject.toml
 ├── uv.lock

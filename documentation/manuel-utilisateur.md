@@ -65,6 +65,7 @@ Le check `clean_tracks_id_not_null` vérifie qu'aucun `track_id` n'est vide. S'i
 | **Sensor** | Un code exécuté à intervalle régulier, qui peut lancer un run | **Automation** | [`sensors.py`](../src/streamify_ops/defs/sensors.py) |
 | **Politique de fraîcheur** | Le délai au-delà duquel un asset est signalé comme périmé | **Catalog** → asset → **Overview** | `FreshnessPolicy` |
 | **Retry** | Une nouvelle tentative après l'échec d'une étape | **Runs** → run | `RetryPolicy` |
+| **Ressource** | Un objet de connexion injecté dans les assets qui le demandent | **Deployment** → emplacement de code → **Resources** | [`PostgresResource`](../src/streamify_ops/resources/postgres.py) |
 
 ---
 
@@ -142,6 +143,8 @@ Toutes ces commandes supposent `DAGSTER_HOME` exporté et `uv run` en préfixe, 
 | `dagster schedule list -m streamify_ops.definitions` | L'état affiché dans **Automation** | Rien |
 | `dagster schedule start -m streamify_ops.definitions daily_streamify_schedule` | L'interrupteur **Running** s'active | Rien |
 | `dagster schedule stop -m streamify_ops.definitions daily_streamify_schedule` | L'interrupteur **Running** se désactive | Rien |
+| `docker compose up -d --wait` | Rien | Une base PostgreSQL sur le port 5434, données dans un volume Docker |
+| `dg launch --assets artist_stats_table --partition 2024-02-20`, asset activé | Un run dans **Runs** ; **Row count** sur l'asset | Rien dans `data/` : 20 lignes dans la table `artist_stats` |
 | `dagster sensor start -m streamify_ops.definitions inbox_file_sensor` | L'interrupteur du sensor s'active | Rien |
 | `touch data/inbox/2024-04-10.ready`, sensor actif | Un run de `daily_streamify_job` | `data/*/2024-04-10.parquet`, 3 fichiers |
 | `pytest` | **Rien** : les tests n'utilisent pas votre instance | **Rien** : ils écrivent en mémoire ou en dossier temporaire |
@@ -162,6 +165,8 @@ Ces points surprennent souvent et sont illustrés dans le tutoriel.
 - **Les automatismes sont arrêtés par défaut,** y compris `default_automation_condition_sensor`, sans lequel aucune condition d'automatisation n'est évaluée.
 - **`eager()` et `on_cron()` ne traitent que la dernière partition complète,** c'est-à-dire la veille. Modifier une date de 2024 ne déclenche rien.
 - **Les commandes `dg launch` passent à côté de la file d'attente :** `max_concurrent_runs` ne limite que les runs lancés par l'interface, un sensor ou un schedule.
+- **Schedule et cron déclaratif recalculent deux fois la même journée.** Actifs ensemble, ils traitent la veille à 00:00 puis à 01:00 UTC, comme le montre un test en temps simulé. Choisir l'un ou l'autre.
+- **From failure ne fonctionne pas sur un run de `dg launch`.** L'interface affiche `CheckError: Expected non-None value: None`. Sur un run lancé depuis l'interface, la relance ne rejoue que les étapes en échec.
 - **`dg` ne pilote pas les schedules et les sensors.** Utilisez `dagster` avec `-m streamify_ops.definitions`. `code_location_name`, dans `pyproject.toml`, donne le même nom à l'emplacement de code pour que l'interface voie les états démarrés ainsi.
 - **« Preview tick result » n'exécute rien** tant que vous ne cliquez pas sur **Launch all & commit tick result**, qui lance un vrai run.
 - **Un backfill lance un run par partition.** Sur la machine de test, 30 partitions ont pris 2 à 3 minutes.
@@ -183,6 +188,8 @@ Tout est illustré à l'[étape 9 du tutoriel](../TUTORIAL.md#9-automatiser-le-p
 | `max_concurrent_runs` dans `$DAGSTER_HOME/dagster.yaml` | Plus de runs que la limite | Les runs en trop attendent en file | – |
 | `TimeWindowPartitionMapping` sur `weekly_artist_stats` | Calcul d'une date | Lit sa journée et les 6 précédentes. Asset optionnel, à copier dans `defs/assets/` | [`weekly_artist_stats.py`](../src/streamify_ops/optional/weekly_artist_stats.py) |
 
+| `PostgresResource` et `artist_stats_table` | Calcul d'une date | Remplace les lignes de cette date dans la table PostgreSQL `artist_stats`. Asset optionnel, à copier dans `defs/assets/`, voir [l'étape 10 du tutoriel](../TUTORIAL.md#10-publier-dans-postgresql) | [`artist_stats_table.py`](../src/streamify_ops/optional/artist_stats_table.py) |
+
 `STREAMIFY_FAST_AUTOMATION=1`, exporté avant `dg dev`, passe le cron à chaque minute et la fraîcheur à 2 puis 4 minutes, pour les observer sans attendre.
 
 ---
@@ -197,6 +204,9 @@ Tout est illustré à l'[étape 9 du tutoriel](../TUTORIAL.md#9-automatiser-le-p
 | L'interface ne répond pas sur le port 3000 | Le port est déjà pris | `uv run dg dev --port 3001` |
 | `Could not find partition` dans la fenêtre de lancement | La date sort des 90 derniers jours proposés | Cliquez sur **Show all partitions** avant **Custom** |
 | Un asset de `defs/` n'apparaît pas | Le serveur n'a pas relu le code | **Reload definitions** en haut de **Lineage** |
+| `environment variable "STREAMIFY_PG_PASSWORD" which is not set` | La variable manque dans ce terminal, ou le serveur a démarré sans elle | L'exporter, puis relancer `dg dev` si besoin. `dg check defs` ne détecte pas ce cas : la valeur n'est lue qu'à l'exécution |
+| `Connection refused` sur le port 5434 | La base est arrêtée | `docker compose up -d --wait` |
+| `Exportez STREAMIFY_PG_PASSWORD` | `docker compose` a besoin de la variable, y compris pour `stop` et `down` | L'exporter dans ce terminal |
 | Une condition d'automatisation ne déclenche rien | Le sensor est arrêté, ou vous visez une ancienne date | `dagster sensor start -m streamify_ops.definitions default_automation_condition_sensor`, puis visez la veille |
 | Le check reste en **Not evaluated** | Aucun run n'a encore inclus `clean_tracks` | Matérialisez une partition |
 | Vous voulez repartir de zéro | L'historique et les données sont séparés | Arrêtez le serveur, puis `rm -rf .dagster_home data/*/` et `mkdir -p .dagster_home` |
@@ -205,7 +215,7 @@ Tout est illustré à l'[étape 9 du tutoriel](../TUTORIAL.md#9-automatiser-le-p
 
 ## 10. Régénérer les captures
 
-Le script rejoue le tutoriel sur une instance jetable, dans `.docs_capture/`, sans toucher à vos données ni à votre historique. Comptez environ 20 minutes.
+Le script rejoue le tutoriel sur une instance jetable, dans `.docs_capture/`, sans toucher à vos données ni à votre historique. Docker est nécessaire. Comptez environ 25 minutes.
 
 ```bash
 uv run --with playwright playwright install chromium
