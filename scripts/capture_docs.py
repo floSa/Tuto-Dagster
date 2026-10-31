@@ -62,6 +62,11 @@ BACKFILL_RANGE = "[2024-02-01...2024-03-01]"
 AUTOMATION_SENSOR = "default_automation_condition_sensor"
 WEEKLY_SOURCE = ROOT / "src/streamify_ops/optional/weekly_artist_stats.py"
 WEEKLY_ACTIVE = ROOT / "src/streamify_ops/defs/assets/weekly_artist_stats.py"
+EXPORT_SOURCE = ROOT / "src/streamify_ops/optional/artist_stats_table.py"
+EXPORT_ACTIVE = ROOT / "src/streamify_ops/defs/assets/artist_stats_table.py"
+EXPORT_PARTITION = "2024-02-20"
+OUTAGE_PARTITION = "2024-08-01"
+PG_PASSWORD = "streamify"
 ACCENT = "#e5484d"
 
 
@@ -788,6 +793,103 @@ def fast_automation_and_queue(cam: Camera, server: Server) -> None:
     server.start()
 
 
+def compose(name: str, *args: str) -> int:
+    """docker compose sur la base du tutoriel, sortie archivee."""
+    done = subprocess.run(
+        ["docker", "compose", *args],
+        cwd=ROOT,
+        env=ENV,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    log = WORK / "cli" / f"{name}.log"
+    log.write_text(f"$ docker compose {' '.join(args)}\n{done.stdout}{done.stderr}\n")
+    print(f"[docker] {name}: exit={done.returncode}", flush=True)
+    return done.returncode
+
+
+def psql(name: str, query: str) -> str:
+    """Interroge la base comme le fait le tutoriel, et archive le resultat."""
+    done = subprocess.run(
+        ["docker", "compose", "exec", "-T", "postgres"]
+        + ["psql", "-U", "streamify", "-c", query],
+        cwd=ROOT,
+        env=ENV,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    (WORK / "cli" / f"{name}.log").write_text(done.stdout)
+    print(f"[psql] {name}\n{done.stdout}", flush=True)
+    return done.stdout
+
+
+def publish_to_postgres(cam: Camera, server: Server) -> None:
+    ENV["STREAMIFY_PG_PASSWORD"] = PG_PASSWORD
+    assert compose("pg-up", "up", "-d", "--wait") == 0
+    psql("pg-reset", "DROP TABLE IF EXISTS artist_stats")
+    server.stop()
+    server.start()
+    shutil.copy(EXPORT_SOURCE, EXPORT_ACTIVE)
+    try:
+        cam.reload_definitions()
+        assert launch("launch-export", "artist_stats_table", EXPORT_PARTITION) == 0
+        psql(
+            "pg-select",
+            "SELECT * FROM artist_stats ORDER BY track_count DESC, artist_name LIMIT 3",
+        )
+        cam.goto("/assets/artist_stats_table?view=overview")
+        cam.shot(
+            "37-export-postgres",
+            cam.text("Row count"),
+            cam.text("Kinds"),
+        )
+        cam.goto(f"/locations/{MODULE}/resources/postgres", settle=3000)
+        cam.shot("40-ressource-postgres", cam.text("STREAMIFY_PG_PASSWORD"))
+
+        assert compose("pg-stop", "stop", "postgres") == 0
+        # Depuis l'interface: un run de `dg launch` ne peut pas etre relance ensuite.
+        cam.open_materialize(OUTAGE_PARTITION).click()
+        cam.page.wait_for_timeout(2500)
+        run_id = latest_run_id(OUTAGE_PARTITION)
+        assert wait_run_finished(run_id) == "FAILURE"
+        assert compose("pg-start", "up", "-d", "--wait") == 0
+        cam.goto(f"/runs/{run_id}", settle=4000)
+        reexecute = cam.button("Re-execute")
+        box = reexecute.bounding_box()
+        cam.page.mouse.click(box["x"] + box["width"] + 15, box["y"] + box["height"] / 2)
+        cam.page.wait_for_timeout(1000)
+        from_failure = cam.text("From failure")
+        cam.shot(
+            "38-relance-apres-echec",
+            cam.page.get_by_text("Failure", exact=False).first,
+            cam.text("RUN_FAILURE"),
+            from_failure,
+        )
+        from_failure.click()
+        cam.page.wait_for_timeout(3000)
+        retried = latest_run_id(OUTAGE_PARTITION)
+        assert retried != run_id
+        status = wait_run_finished(retried)
+        assert status == "SUCCESS", status
+        cam.goto(f"/runs/{retried}", settle=4000)
+        cam.shot(
+            "39-relance-reussie",
+            cam.page.get_by_text("Success", exact=False).first,
+            cam.page.get_by_text("RUN_SUCCESS", exact=False).first,
+        )
+        psql(
+            "pg-count",
+            "SELECT partition_date, count(*) FROM artist_stats "
+            "GROUP BY partition_date ORDER BY partition_date",
+        )
+    finally:
+        EXPORT_ACTIVE.unlink()
+    cam.reload_definitions()
+    assert compose("pg-down", "down", "-v") == 0
+
+
 def main() -> None:
     shutil.rmtree(WORK, ignore_errors=True)
     HOME.mkdir(parents=True)
@@ -813,6 +915,7 @@ def main() -> None:
             retry_transient_failure(cam)
             partition_dependency(cam)
             fast_automation_and_queue(cam, server)
+            publish_to_postgres(cam, server)
             browser.close()
     finally:
         server.stop()
