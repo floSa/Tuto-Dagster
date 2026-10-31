@@ -407,7 +407,7 @@ uv run dagster schedule stop -m streamify_ops.definitions daily_streamify_schedu
 
 ## 9. Automatiser le pipeline
 
-Jusqu'ici, vous déclenchiez tout vous-même. Cette étape laisse Dagster agir seul, de cinq façons :
+Jusqu'ici, vous déclenchiez tout vous-même. Cette étape laisse Dagster agir seul :
 
 | Vous voulez… | Outil | Section |
 |---|---|---|
@@ -438,8 +438,6 @@ uv run dagster sensor start -m streamify_ops.definitions default_automation_cond
 ```bash
 uv run dg launch --assets raw_tracks_data --partition "$(date -u -d yesterday +%F)"
 ```
-
-Sous macOS, remplacez `date -u -d yesterday +%F` par `date -u -v-1d +%F`.
 
 **Dans le navigateur,** ouvrez **Runs**. Moins d'une minute plus tard, un second run apparaît. Le vôtre ① ne contient que Bronze ; celui du sensor ② enchaîne Silver, le check et Gold, sans action de votre part.
 
