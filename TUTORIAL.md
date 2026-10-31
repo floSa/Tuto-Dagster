@@ -777,7 +777,7 @@ docker compose stop postgres
 
 **Dans le navigateur,** sur **Lineage**, cliquer sur **Materialize all…**, **Show all partitions**, **Custom**, saisir `2024-08-01`, puis **Launch 1 run**.
 
-Le run s'arrête en **Failure** ① sur `artist_stats_table` ②, avec l'erreur `Connection refused` : Bronze, Silver, le check et Gold ont réussi.
+Le run s'arrête en **Failure** ①. La ligne `RUN_FAILURE` ② indique `Steps failed: ['artist_stats_table']`, avec l'erreur `Connection refused` : Bronze, Silver, le check et Gold ont réussi.
 
 **Dans le terminal 2,** redémarrer la base :
 
