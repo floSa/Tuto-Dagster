@@ -45,6 +45,36 @@ def test_cron_requests_bronze_after_the_tick(tmp_path):
     assert after.get_requested_partitions(AssetKey("raw_tracks_data")) == {"2024-03-01"}
 
 
+def test_schedule_and_cron_both_recompute_the_same_day(tmp_path):
+    """Le schedule de 00:00 et le cron de 01:00 traitent la meme partition."""
+    instance = DagsterInstance.ephemeral()
+    defs = _defs(tmp_path)
+    before = _evaluate(defs, instance, datetime(2024, 3, 2, 0, 30, tzinfo=timezone.utc))
+
+    materialize(
+        [*assets, *asset_checks],
+        partition_key="2024-03-01",
+        instance=instance,
+        resources={"io_manager": LocalFilesystemIOManager(base_path=str(tmp_path))},
+    )
+
+    # Le sensor voit la mise a jour du schedule bien avant le tick de 01:00.
+    seen = _evaluate(
+        defs,
+        instance,
+        datetime(2024, 3, 2, 0, 31, tzinfo=timezone.utc),
+        cursor=before.cursor,
+    )
+    after = _evaluate(
+        defs,
+        instance,
+        datetime(2024, 3, 2, 1, 1, tzinfo=timezone.utc),
+        cursor=seen.cursor,
+    )
+    requested = after.get_requested_partitions(AssetKey("raw_tracks_data"))
+    assert requested == {"2024-03-01"}
+
+
 def test_eager_follows_an_upstream_update(tmp_path):
     instance = DagsterInstance.ephemeral()
     defs = _defs(tmp_path)
