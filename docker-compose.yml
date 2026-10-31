@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: streamify_postgres
+    environment:
+      POSTGRES_USER: streamify
+      POSTGRES_DB: streamify
+      POSTGRES_PASSWORD: ${STREAMIFY_PG_PASSWORD:?Exportez STREAMIFY_PG_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - streamify_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U streamify -d streamify"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  streamify_pg:
