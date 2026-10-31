@@ -28,39 +28,49 @@ mkdir -p "$DAGSTER_HOME"
 ```
 
 ```bash
-uv run dagster dev -m streamify_ops
+uv run dg dev
 ```
 
 Ouvrez ensuite [http://localhost:3000](http://localhost:3000). Exportez `DAGSTER_HOME` dans chaque terminal utilisé : c'est ce qui relie vos commandes à l'interface.
 
 ## Ce que le pipeline met en œuvre
 
-- **Assets en architecture médaillon :** `raw_tracks_data` (Bronze) → `clean_tracks` (Silver) → `daily_artist_stats` (Gold).
+- **Assets en architecture médaillon,** rangés en groupes : `raw_tracks_data` (Bronze) → `clean_tracks` (Silver) → `daily_artist_stats` (Gold).
 - **Partitions journalières** depuis le 2024-01-01, avec rattrapage (*backfill*).
-- **Check qualité bloquant :** `clean_tracks_id_not_null`, et un moyen de le faire échouer à la demande.
-- **IO Manager personnalisé :** écriture et lecture en Parquet dans `data/`.
+- **Check qualité bloquant et partitionné :** `clean_tracks_id_not_null`, et un moyen de le faire échouer à la demande.
+- **IO Manager personnalisé :** écriture et lecture en Parquet dans `data/`, avec les métadonnées standard de Dagster.
 - **Job et schedule quotidiens,** arrêtés par défaut, qui traitent la veille à 00:00 UTC.
+- **Automatisation :** Declarative Automation, sensors de fichier et d'échec, politique de fraîcheur, retries, file d'attente des runs, dépendance entre partitions.
+- **Structure `dg` :** tout ce qui est placé dans `src/streamify_ops/defs/` est chargé automatiquement.
 
 ## Arborescence
 
 ```text
 Dagster-Test-Bench/
-├── streamify_ops/
-│   ├── __init__.py                         # Definitions : assets, checks, IO Manager, job, schedule
-│   ├── assets/
-│   │   ├── ingestion.py                    # Bronze : raw_tracks_data, partitions
-│   │   ├── transformation.py               # Silver : clean_tracks, check bloquant
-│   │   └── analytics.py                    # Gold : daily_artist_stats
-│   ├── resources/
-│   │   └── local_filesystem_io_manager.py  # Stockage Parquet
-│   ├── jobs.py                             # daily_streamify_job
-│   └── schedules.py                        # daily_streamify_schedule
-├── tests/                                  # Tests des assets, du check et du schedule
+├── src/streamify_ops/
+│   ├── definitions.py                      # Charge tout le dossier defs/
+│   ├── settings.py                         # Dossier de données, mode accéléré
+│   ├── defs/
+│   │   ├── assets/
+│   │   │   ├── ingestion.py                # Bronze : raw_tracks_data, partitions
+│   │   │   ├── transformation.py           # Silver : clean_tracks, check bloquant
+│   │   │   └── analytics.py                # Gold : daily_artist_stats
+│   │   ├── resources.py                    # Déclare l'IO Manager
+│   │   ├── jobs.py                         # daily_streamify_job
+│   │   ├── schedules.py                    # daily_streamify_schedule
+│   │   └── sensors.py                      # Arrivée de fichier, échec de run
+│   ├── optional/
+│   │   └── weekly_artist_stats.py          # Cumul sur 7 jours, à copier dans defs/assets/
+│   └── resources/
+│       └── local_filesystem_io_manager.py  # Stockage Parquet
+├── tests/                                  # Assets, check, schedule, sensors, automatisation
 ├── scripts/capture_docs.py                 # Régénère les captures de la documentation
 ├── documentation/
 │   ├── manuel-utilisateur.md
 │   └── images/
 ├── data/                                   # Fichiers Parquet produits (non versionnés)
+├── .github/workflows/ci.yml                # black, dg check defs, pytest
+├── LICENSE
 ├── pyproject.toml
 ├── uv.lock
 └── TUTORIAL.md
@@ -75,3 +85,11 @@ uv run pytest
 ```bash
 uv run black .
 ```
+
+```bash
+uv run dg check defs
+```
+
+## Licence
+
+[MIT](LICENSE)
