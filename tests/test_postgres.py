@@ -2,7 +2,7 @@ import os
 
 import psycopg
 import pytest
-from dagster import AssetKey, materialize
+from dagster import materialize
 
 from pipeline import asset_checks, assets
 from streamify_ops.optional.artist_stats_table import (
@@ -84,10 +84,7 @@ def test_other_partitions_are_kept(tmp_path, table):
 def test_definitions_declare_the_asset_and_its_resource():
     defs = postgres_export()
 
-    assert (
-        AssetKey("artist_stats_table")
-        in defs.resolve_asset_graph().get_all_asset_keys()
-    )
+    assert artist_stats_table in defs.assets
     assert "postgres" in defs.resources
 
 
