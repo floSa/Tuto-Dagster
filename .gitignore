@@ -23,6 +23,8 @@ storage/
 # Données générées
 data/*.parquet
 data/*/*.parquet
+data/alerts/
+data/inbox/
 
 # Tests & Linters
 .pytest_cache/
